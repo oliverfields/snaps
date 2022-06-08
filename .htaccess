@@ -1,0 +1,16 @@
+DirectoryIndex index.html
+
+Order deny,allow
+AuthType Basic
+AuthUserFile /home/5/p/phnd/htpasswd/filaments/.htpasswd 
+AuthName "Password protected area"
+Require valid-user
+
+<IfModule mod_rewrite.c>
+  RewriteEngine on 
+
+  # Redirect to https
+  RewriteCond %{HTTPS} off
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+</IfModule>
