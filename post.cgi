@@ -5,7 +5,8 @@
 LOG = '/home/5/p/phnd/snaps.phnd.net/log.txt'
 IMAGES_DIR = '/home/5/p/phnd/snaps.phnd.net/images'
 THUMBNAIL_WIDTH = '200'
-
+LARGE_WIDTH = '600'
+JSON_FEED = '/home/5/p/phnd/snaps.phnd.net/feed.json'
 
 import cgi, sys, os
 from pathlib import Path
@@ -17,6 +18,29 @@ import json
 def log(msg):
 	with open(LOG, "a") as f:
 		f.write(msg+'\n')
+
+
+def prepend_json_feed(post):
+	"""
+	Add post details to start of json feed
+
+    Requires Python 3.7+ because relies on dictionary keeping order
+	"""
+
+	new_post = {
+		'caption': post['caption'],
+		'id': post['id'],
+		'originalExtension': post['image_original'].partition('.')[2]
+	}
+
+	with open(JSON_FEED) as f:
+		feed = json.load(f)
+
+	# Add new post first in feed
+	feed['feed'] = [ new_post ] + feed['feed']
+
+	with open(JSON_FEED, 'w') as f:
+		json.dump(feed, f, indent=2)
 
 
 def save_post_image(post_id, form_image):
@@ -39,9 +63,16 @@ def save_post_image(post_id, form_image):
 	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -resize " + THUMBNAIL_WIDTH + " '" + IMAGES_DIR + '/' + file_name_thumbnail + "'"
 	os.system(cmd)
 
+	# Create large
+	file_extension_large = 'png'
+	file_name_large = post_id + '-large.' + file_extension_large
+	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -resize " + LARGE_WIDTH + " '" + IMAGES_DIR + '/' + file_name_large + "'"
+	os.system(cmd)
+
 	return {
 		'original': file_name_original,
-		'thumbnail': file_name_thumbnail
+		'thumbnail': file_name_thumbnail,
+		'large': file_name_large
 	}
 
 
@@ -59,14 +90,17 @@ def put_request():
 
 	try:
 		post = {
-			'post_id': uuid.uuid4().hex,
-			'title': form['title'].value
+			'id': uuid.uuid4().hex,
+			'caption': form['caption'].value
 		}
 
-		post_files = save_post_image(post['post_id'], form['image'])
+		post_files = save_post_image(post['id'], form['image'])
 
 		post['image_original'] = post_files['original']
 		post['image_thumbnail'] = post_files['thumbnail']
+		post['image_large'] = post_files['large']
+
+		prepend_json_feed(post)
 
 		print('Status: 200 OK')
 		print('Content-type: text/plain')

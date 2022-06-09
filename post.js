@@ -21,7 +21,7 @@ const Post = function() {
 
       var data = new FormData()
       data.append('image', self.postFormImage.files[0]) 
-      data.append('title', self.postFormTitle.value)
+      data.append('caption', self.postFormCaption.value)
 
       try {
         // Response contains fetch promise
@@ -49,7 +49,7 @@ const Post = function() {
       postImg.setAttribute("src", post.id + '-thumbnail.png');
 
       let postCaption = document.createElement("figcaption");
-      postCaption.innerHTML = post.title;
+      postCaption.innerHTML = post.caption;
 
       postFig.append(postImg);
       postFig.append(postCaption);
@@ -85,7 +85,7 @@ console.log(feedDiv);
 
     },
     newForm: function() {
-      this.postFormTitle.value = "";
+      this.postFormCaption.value = "";
       this.postFormImage.value = "";
       this.toggleForm();
     },
@@ -95,9 +95,9 @@ console.log(feedDiv);
       this.postFormImage.setAttribute("name", "image");
       this.postFormImage.setAttribute("accept", ".jpg, .png, .jpeg, .gif");
 
-      this.postFormTitle = document.createElement("input");
-      this.postFormTitle.setAttribute("type", "text");
-      this.postFormTitle.setAttribute("name", "title");
+      this.postFormCaption = document.createElement("input");
+      this.postFormCaption.setAttribute("type", "text");
+      this.postFormCaption.setAttribute("name", "caption");
 
       this.postFormButton = document.createElement("input");
       this.postFormButton.setAttribute("type", "button");
@@ -115,7 +115,7 @@ console.log(feedDiv);
       this.formDiv = document.createElement('div');
       this.formDiv.setAttribute("style", "position: absolute; top: 50%; left: 50%; width: 300px; margin-left: -150px; height: 300px; margin-top: -150px; background: black; z-index: 2; display: none;");
       this.formDiv.append(this.postFormClose);
-      this.formDiv.append(this.postFormTitle);
+      this.formDiv.append(this.postFormCaption);
       this.formDiv.append(this.postFormImage);
       this.formDiv.append(this.postFormButton);
 
