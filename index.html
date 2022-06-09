@@ -1,11 +1,16 @@
-<html>
-<head>
-<script src="post.js"></script>
-<body>
-  <script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <script src="post.js"></script>
+    <link rel="stylesheet" href="normalize.css" />
+  </head>
+  <body>
+    <script>
 const p = new Post;
-p.createPostForm();
+p.init();
 //Object.keys(p).forEach(e => console.log(`key=${e}  value=${p[e]}`));
-  </script>
-</body>
+    </script>
+  </body>
 </html>

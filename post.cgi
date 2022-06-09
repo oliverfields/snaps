@@ -8,6 +8,7 @@ THUMBNAIL_WIDTH = '200'
 
 
 import cgi, sys, os
+from pathlib import Path
 import cgitb; cgitb.enable()
 import uuid
 import json
@@ -23,6 +24,9 @@ def save_post_image(post_id, form_image):
 	Save file from form to disk and create post thumbnail
 	"""
 	sys.path.insert(0, os.getcwd())
+
+    # Create dir if not exists
+	Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 
 	# Write original image to disk
 	file_extension_original = form_image.filename.partition('.')[2].lower()
@@ -58,8 +62,6 @@ def put_request():
 			'post_id': uuid.uuid4().hex,
 			'title': form['title'].value
 		}
-
-		log(form['title'].value)
 
 		post_files = save_post_image(post['post_id'], form['image'])
 

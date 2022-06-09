@@ -1,16 +1,24 @@
 const Post = function() {
   var feed = {};
+  var postCount = 10;
+  var fromPost = 0;
+  var toPost = this.fromPost + this.postCount;
+
 
   return {
+    init: function() {
+      this.createFeed();
+      this.createPostForm();
+    },
     addPost: async function() {
       // Add new post to feed
 
       // Create new post
-      let newPost = await this.doPut(this);
+      let newPost = await this.putPost(this);
 
       console.log(newPost);
     },
-    doPut: async function(self) {
+    putPost: async function(self) {
       // Send put request to api to create new post artifacts
 
       var data = new FormData()
@@ -20,35 +28,96 @@ const Post = function() {
       try {
         // Response contains fetch promise
         let response = await fetch(
-          '/post.cgi', {method: 'PUT', body: data });
+          'post.cgi', {method: 'PUT', body: data });
         return await response.json();
       }
       catch(error) {
         console.error(error);
       }
     },
+    getFeed: async function() {
+       try {
+        let response = await fetch('feed.json');
+        return await response.json();
+      }
+      catch(error) {
+        console.error(error);
+      }
+    },
+    generateFeedPosts: async function(feed) {
+      // Add given number of posts
+
+      postsToAdd = feed.slice(this.fromPost, this.toPost);
+
+      for (var i = 0; i < postsToAdd.length; i++) {
+        console.log(postsToAdd[i]);
+      }
+    },
+    createFeed: async function(parentElement=document.body) {
+      this.feed = await this.getFeed();
+
+      this.feedDiv = document.createElement("div");
+      this.feedDiv = "width: 400px; margin: 1em auto;";
+
+      this.feedDiv.append(await this.generateFeedPosts(this.feed));
+
+      this.newPostButton = document.createElement("input");
+      this.newPostButton.setAttribute("type", "button");
+      this.newPostButton.setAttribute("value", "New post");
+      this.newPostButton.addEventListener("click", () => this.newForm());
+
+      parentElement.append(this.newPostButton);
+      parentElement.append(this.feedDiv);
+
+      console.log(this.feed);
+    },
+    newForm: function() {
+      this.postFormTitle.value = "";
+      this.postFormImage.value = "";
+      this.toggleForm();
+    },
     createPostForm: function(parentElement=document.body) {
-      let postFormImage = document.createElement("input");
-      postFormImage.setAttribute("type", "file");
-      postFormImage.setAttribute("name", "image");
-      this.postFormImage = postFormImage;
+      this.postFormImage = document.createElement("input");
+      this.postFormImage.setAttribute("type", "file");
+      this.postFormImage.setAttribute("name", "image");
+      this.postFormImage.setAttribute("accept", ".jpg, .png, .jpeg, .gif");
 
-      let postFormTitle = document.createElement("input");
-      postFormTitle.setAttribute("type", "text");
-      postFormTitle.setAttribute("name", "title");
-      this.postFormTitle = postFormTitle;
+      this.postFormTitle = document.createElement("input");
+      this.postFormTitle.setAttribute("type", "text");
+      this.postFormTitle.setAttribute("name", "title");
 
-      let postFormButton = document.createElement("input");
-      postFormButton.setAttribute("type", "button");
-      postFormButton.setAttribute("value", "New post");
-      postFormButton.addEventListener("click", () => this.addPost());
-      this.postFormButton = postFormButton;
+      this.postFormButton = document.createElement("input");
+      this.postFormButton.setAttribute("type", "button");
+      this.postFormButton.setAttribute("value", "New post");
+      this.postFormButton.addEventListener("click", () => this.addPost());
 
-      let formDiv = document.createElement('div');
-      formDiv.append(this.postFormTitle);
-      formDiv.append(this.postFormImage);
-      formDiv.append(this.postFormButton);
-      parentElement.append(formDiv);
+      this.postFormClose = document.createElement("span");
+      this.postFormClose.innerHTML = "&#x2716;";
+      this.postFormClose.setAttribute("style", "float: right; margin: .3em; color: white; cursor: pointer;");
+      this.postFormClose.addEventListener("click", () => this.toggleForm());
+
+      this.overlayDiv = document.createElement('div');
+      this.overlayDiv.setAttribute("style", "position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: black; opacity: .7; z-index: 1; display: none;");
+
+      this.formDiv = document.createElement('div');
+      this.formDiv.setAttribute("style", "position: absolute; top: 50%; left: 50%; width: 300px; margin-left: -150px; height: 300px; margin-top: -150px; background: black; z-index: 2; display: none;");
+      this.formDiv.append(this.postFormClose);
+      this.formDiv.append(this.postFormTitle);
+      this.formDiv.append(this.postFormImage);
+      this.formDiv.append(this.postFormButton);
+
+      parentElement.append(this.formDiv);
+      parentElement.append(this.overlayDiv);
+    },
+    toggleForm: function() {
+      if (this.overlayDiv.style.display === "none") {
+        this.overlayDiv.style.display = "block";
+        this.formDiv.style.display = "block";
+      }
+      else {
+        this.overlayDiv.style.display = "none";
+        this.formDiv.style.display = "none";
+      }
     }
   } // /return
 }
