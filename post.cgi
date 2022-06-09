@@ -60,13 +60,13 @@ def save_post_image(post_id, form_image):
 	# Create thumbnail
 	file_extension_thumb = 'png'
 	file_name_thumbnail = post_id + '-thumbnail.' + file_extension_thumb
-	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -resize " + THUMBNAIL_WIDTH + " '" + IMAGES_DIR + '/' + file_name_thumbnail + "'"
+	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -auto-orient -resize " + THUMBNAIL_WIDTH + " '" + IMAGES_DIR + '/' + file_name_thumbnail + "'"
 	os.system(cmd)
 
 	# Create large
 	file_extension_large = 'png'
 	file_name_large = post_id + '-large.' + file_extension_large
-	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -resize " + LARGE_WIDTH + " '" + IMAGES_DIR + '/' + file_name_large + "'"
+	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -auto-orient -resize " + LARGE_WIDTH + " '" + IMAGES_DIR + '/' + file_name_large + "'"
 	os.system(cmd)
 
 	return {

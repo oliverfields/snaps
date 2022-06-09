@@ -11,10 +11,30 @@ const Post = function() {
     addPost: async function() {
       // Add new post to feed
 
+      // Set spinner instead of submit button
+      this.postFormButton.remove();
+      this.postFormSubmit.append(this.postFormSpinner);
+
+      let interval = setInterval(() => {
+        if ((this.postFormSpinner.innerHTML += ".").length == 13) {
+          this.postFormSpinner.innerHTML = "Uploading";
+        }
+      }, 300);
+
       // Create new post
       let newPost = await this.putPost(this);
 
-      console.log(newPost);
+      // Add post to html page
+      this.feedDiv.prepend(this.createPost(newPost));
+
+      // Hide form
+      this.toggleForm();
+
+      // Sidy up spinner and add button back
+      this.postFormSpinner.remove();
+      clearInterval(interval);
+
+      this.postFormSubmit.append(this.postFormButton);
     },
     putPost: async function(self) {
       // Send put request to api to create new post artifacts
@@ -46,7 +66,7 @@ const Post = function() {
       let postFig = document.createElement("figure");
 
       let postImg = document.createElement("img");
-      postImg.setAttribute("src", post.id + '-thumbnail.png');
+      postImg.setAttribute("src", "images/" + post.id + "-thumbnail.png");
 
       let postCaption = document.createElement("figcaption");
       postCaption.innerHTML = post.caption;
@@ -58,11 +78,10 @@ const Post = function() {
     },
     generateFeedPosts: function(feedDiv, fromPost, untilPost) {
       // Add given number of posts
-console.log(feedDiv);
       let counter = 0;
-      for (var postKey in this.feed) {
+      for (var i = 0; i < this.feed.feed.length; i++) {
         if (counter >= fromPost && counter < untilPost) {
-          feedDiv.append(this.createPost(this.feed[postKey]));
+          feedDiv.append(this.createPost(this.feed.feed[i]));
         }
         counter += 1;
       }
@@ -104,6 +123,11 @@ console.log(feedDiv);
       this.postFormButton.setAttribute("value", "New post");
       this.postFormButton.addEventListener("click", () => this.addPost());
 
+      this.postFormSpinner = document.createElement("span");
+      this.postFormSpinner.innerHTML = 'Uploading';
+
+      this.postFormSubmit = document.createElement("div");
+
       this.postFormClose = document.createElement("span");
       this.postFormClose.innerHTML = "&#x2716;";
       this.postFormClose.setAttribute("style", "float: right; margin: .3em; color: white; cursor: pointer;");
@@ -113,11 +137,14 @@ console.log(feedDiv);
       this.overlayDiv.setAttribute("style", "position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: black; opacity: .7; z-index: 1; display: none;");
 
       this.formDiv = document.createElement('div');
-      this.formDiv.setAttribute("style", "position: absolute; top: 50%; left: 50%; width: 300px; margin-left: -150px; height: 300px; margin-top: -150px; background: black; z-index: 2; display: none;");
+      this.formDiv.setAttribute("style", "position: absolute; top: 50%; left: 50%; width: 300px; margin-left: -150px; height: 300px; margin-top: -150px; background: yellow; z-index: 2; display: none;");
+
+      this.postFormSubmit.append(this.postFormButton);
+
       this.formDiv.append(this.postFormClose);
       this.formDiv.append(this.postFormCaption);
       this.formDiv.append(this.postFormImage);
-      this.formDiv.append(this.postFormButton);
+      this.formDiv.append(this.postFormSubmit);
 
       parentElement.append(this.formDiv);
       parentElement.append(this.overlayDiv);
