@@ -1,12 +1,10 @@
 const Post = function() {
-  var feed = {};
-  var postCount = 10;
-  var fromPost = 0;
-  var toPost = this.fromPost + this.postCount;
-
-
   return {
     init: function() {
+      this.feed = {};
+      this.fromPost = 0;
+      this.untilPost = 2;
+
       this.createFeed();
       this.createPostForm();
     },
@@ -44,22 +42,38 @@ const Post = function() {
         console.error(error);
       }
     },
-    generateFeedPosts: async function(feed) {
+    createPost: function(post) {
+      let postFig = document.createElement("figure");
+
+      let postImg = document.createElement("img");
+      postImg.setAttribute("src", post.id + '-thumbnail.png');
+
+      let postCaption = document.createElement("figcaption");
+      postCaption.innerHTML = post.title;
+
+      postFig.append(postImg);
+      postFig.append(postCaption);
+
+      return postFig;
+    },
+    generateFeedPosts: function(feedDiv, fromPost, untilPost) {
       // Add given number of posts
-
-      postsToAdd = feed.slice(this.fromPost, this.toPost);
-
-      for (var i = 0; i < postsToAdd.length; i++) {
-        console.log(postsToAdd[i]);
+console.log(feedDiv);
+      let counter = 0;
+      for (var postKey in this.feed) {
+        if (counter >= fromPost && counter < untilPost) {
+          feedDiv.append(this.createPost(this.feed[postKey]));
+        }
+        counter += 1;
       }
     },
     createFeed: async function(parentElement=document.body) {
       this.feed = await this.getFeed();
 
       this.feedDiv = document.createElement("div");
-      this.feedDiv = "width: 400px; margin: 1em auto;";
+      this.feedDiv.setAttribute("style", "width: 400px; margin: 1em auto;");
 
-      this.feedDiv.append(await this.generateFeedPosts(this.feed));
+      this.generateFeedPosts(this.feedDiv, this.fromPost, this.untilPost);
 
       this.newPostButton = document.createElement("input");
       this.newPostButton.setAttribute("type", "button");
@@ -69,7 +83,6 @@ const Post = function() {
       parentElement.append(this.newPostButton);
       parentElement.append(this.feedDiv);
 
-      console.log(this.feed);
     },
     newForm: function() {
       this.postFormTitle.value = "";
