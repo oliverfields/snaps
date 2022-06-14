@@ -3,21 +3,54 @@ const Post = function() {
     init: function() {
       this.feed = {};
       this.fromPost = 0;
-      this.untilPost = 2;
+      this.untilPost = 3;
       this.imageDir = "images/";
       this.largeSuffix = "-large.png";
       this.thumbnailSuffix = "-thumbnail.png";
 
       this.createFeed();
       this.createPostForm();
-      this.createHighlight();
       this.createOverlay();
+    },
+    deletePost: async function() {
+      if (confirm("Really delete this post?") == false) {
+        return false;
+      }
+
+      console.log("Deleting " + this.postFormId.value);
+
+      // Set spinner instead of submit button
+      this.postFormDeleteButton.style.display = "none";
+      this.postFormUpdateButton.style.display = "none";
+      this.postFormSubmit.append(this.postFormSpinner);
+
+      this.postFormSpinner.innerHTML = "Deleting";
+      let interval = setInterval(() => {
+        if ((this.postFormSpinner.innerHTML += ".").length == 12) {
+          this.postFormSpinner.innerHTML = "Deleting";
+        }
+      }, 300);
+
+      await this.deletePostRequest(this.postFormId.value);
+
+      // Remove post from feed
+      let post = document.getElementById(this.postFormId.value);
+      post.remove();
+
+      // Hide form
+      this.closeForm();
+
+      // Tidy up spinner and add button back
+      this.postFormSpinner.remove();
+      clearInterval(interval);
+
+
     },
     addPost: async function() {
       // Add new post to feed
 
       // Set spinner instead of submit button
-      this.postFormButton.remove();
+      this.postFormNewButton.remove();
       this.postFormSubmit.append(this.postFormSpinner);
 
       let interval = setInterval(() => {
@@ -27,21 +60,21 @@ const Post = function() {
       }, 300);
 
       // Create new post
-      let newPost = await this.putPost(this);
+      let newPost = await this.putPostRequest(this);
 
       // Add post to html page
       this.feedDiv.prepend(this.createPost(newPost));
 
       // Hide form
-      this.toggleElement(this.formDiv);
+      this.closeForm();
 
-      // Sidy up spinner and add button back
+      // Tidy up spinner and add button back
       this.postFormSpinner.remove();
       clearInterval(interval);
 
-      this.postFormSubmit.append(this.postFormButton);
+      this.postFormSubmit.append(this.postFormNewButton);
     },
-    putPost: async function(self) {
+    putPostRequest: async function(self) {
       // Send put request to api to create new post artifacts
 
       var data = new FormData()
@@ -59,6 +92,24 @@ const Post = function() {
         console.error(error);
       }
     },
+    deletePostRequest: async function(id) {
+      // Send delete request to api to create delete post
+
+      var data = new FormData()
+      data.append('id', id)
+
+      try {
+        // Response contains fetch promise
+        let response = await fetch(
+          'post.cgi', {method: 'DELETE', body: data });
+        return await response;
+      }
+      catch(error) {
+        alert('Deleting post failed');
+        console.error(error);
+      }
+    },
+
     getFeed: async function() {
        try {
         let response = await fetch('feed.json');
@@ -69,6 +120,9 @@ const Post = function() {
       }
     },
     createPost: function(post) {
+      let postFigDiv = document.createElement("div");
+      postFigDiv.setAttribute("id", post.id);
+
       let postFig = document.createElement("figure");
 
       let postImg = document.createElement("img");
@@ -77,12 +131,32 @@ const Post = function() {
       let postCaption = document.createElement("figcaption");
       postCaption.innerHTML = post.caption;
 
-      postFig.addEventListener("click", () => this.highlightPost(this.imageDir + post.id + this.largeSuffix, post.caption));
+      let postFigEdit = document.createElement("a");
+      postFigEdit.innerHTML = "✏️";
 
+      postFigEdit.addEventListener("click", () => {
+        this.postFormId.value = post.id;
+        this.postFormCaption.value = post.caption;
+        this.postFormImage.value = "";
+        this.postFormNewButton.style.display = "none";
+        this.postFormUpdateButton.style.display = "block";
+        this.postFormDeleteButton.style.display = "block";
+        this.showForm();
+      })
+
+
+      let postFigOriginalImageLink = document.createElement("a");
+      postFigOriginalImageLink.innerHTML = "🖼️";
+      postFigOriginalImageLink.setAttribute("href", this.imageDir + post.id + "-original." + post.originalExtension);
+      postFigOriginalImageLink.setAttribute("target", "_blank");
+
+      postFigDiv.append(postFig);
+      postFigDiv.append(postFigEdit);
+      postFigDiv.append(postFigOriginalImageLink);
       postFig.append(postImg);
       postFig.append(postCaption);
 
-      return postFig;
+      return postFigDiv;
     },
     generateFeedPosts: function(feedDiv, fromPost, untilPost) {
       // Add given number of posts
@@ -98,41 +172,44 @@ const Post = function() {
       this.feed = await this.getFeed();
 
       this.feedDiv = document.createElement("div");
-      this.feedDiv.setAttribute("style", "width: 400px; margin: 1em auto;");
+      this.feedDiv.setAttribute("id", "feed");
 
       this.generateFeedPosts(this.feedDiv, this.fromPost, this.untilPost);
 
-      this.newPostButton = document.createElement("input");
-      this.newPostButton.setAttribute("type", "button");
-      this.newPostButton.setAttribute("value", "New post");
-      this.newPostButton.addEventListener("click", () => this.newForm());
+      this.newPostPlus = document.createElement("div");
+      this.newPostPlus.setAttribute("id", "new-post-plus");
+      this.newPostPlus.innerHTML = "+";
+      this.newPostPlus.addEventListener("click", () => this.newForm());
 
-      parentElement.append(this.newPostButton);
+      parentElement.append(this.newPostPlus);
       parentElement.append(this.feedDiv);
 
     },
     newForm: function() {
+      this.postFormId.value = "";
       this.postFormCaption.value = "";
       this.postFormImage.value = "";
-      this.toggleElement(this.formDiv);
+      this.postFormNewButton.style.display = "block";
+      this.postFormUpdateButton.style.display = "none";
+      this.postFormDeleteButton.style.display = "none";
+      this.showForm();
     },
     createOverlay: function(parentElement=document.body) {
       this.overlayDiv = document.createElement('div');
-      this.overlayDiv.setAttribute("style", "position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: black; opacity: .7; z-index: 1; display: none;");
+      this.overlayDiv.setAttribute("id", "overlay");
 
       this.overlayClose = document.createElement("span");
-      this.overlayClose.innerHTML = "&#215;";
-      this.overlayClose.setAttribute("style", "float: right; margin: .3em; font-size: 2em; font-weight: bold; color: white; cursor: pointer;");
+      this.overlayClose.innerHTML = "+";
+      this.overlayClose.setAttribute("id", "overlay-close");
 
-      //this.overlayClose.addEventListener("click", () => this.closeOverlay());
-      this.overlayDiv.addEventListener("click", () => this.closeOverlay());
+      this.overlayDiv.addEventListener("click", () => this.closeForm());
 
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
           //if esc key was not pressed in combination with ctrl or alt or shift
           const isNotCombinedKey = !(event.ctrlKey || event.altKey || event.shiftKey);
           if (isNotCombinedKey) {
-            this.closeOverlay();
+            this.closeForm();
           }
         }
       });
@@ -143,71 +220,76 @@ const Post = function() {
     createPostForm: function(parentElement=document.body) {
       this.postFormImage = document.createElement("input");
       this.postFormImage.setAttribute("type", "file");
+      this.postFormImage.setAttribute("id", "image");
       this.postFormImage.setAttribute("name", "image");
       this.postFormImage.setAttribute("accept", ".jpg, .png, .jpeg, .gif");
 
-      this.postFormCaption = document.createElement("input");
-      this.postFormCaption.setAttribute("type", "text");
-      this.postFormCaption.setAttribute("name", "caption");
+      this.postFormImageLabel = document.createElement("label");
+      this.postFormImageLabel.setAttribute("for", "image");
+      this.postFormImageLabel.innerHTML = "Photo";
 
-      this.postFormButton = document.createElement("input");
-      this.postFormButton.setAttribute("type", "button");
-      this.postFormButton.setAttribute("value", "New post");
-      this.postFormButton.addEventListener("click", () => this.addPost());
+      //this.postFormCaption = document.createElement("input");
+      //this.postFormCaption.setAttribute("type", "text");
+      this.postFormCaption = document.createElement("textarea");
+      this.postFormCaption.setAttribute("name", "caption");
+      this.postFormCaption.setAttribute("id", "caption");
+
+      this.postFormCaptionLabel = document.createElement("label");
+      this.postFormCaptionLabel.setAttribute("for", "caption");
+      this.postFormCaptionLabel.innerHTML = "Caption";
+
+      this.postFormId = document.createElement("input");
+      this.postFormId.setAttribute("type", "hidden");
+      this.postFormId.setAttribute("name", "id");
+
+      this.postFormNewButton = document.createElement("input");
+      this.postFormNewButton.setAttribute("type", "button");
+      this.postFormNewButton.setAttribute("value", "Create");
+      this.postFormNewButton.addEventListener("click", () => this.addPost());
+
+      this.postFormUpdateButton = document.createElement("input");
+      this.postFormUpdateButton.setAttribute("type", "button");
+      this.postFormUpdateButton.setAttribute("value", "Update");
+      this.postFormUpdateButton.addEventListener("click", () => this.updatePost());
+
+      this.postFormDeleteButton = document.createElement("input");
+      this.postFormDeleteButton.setAttribute("type", "button");
+      this.postFormDeleteButton.setAttribute("value", "Delete");
+      this.postFormDeleteButton.setAttribute("class", "warning");
+      this.postFormDeleteButton.addEventListener("click", () => this.deletePost());
 
       this.postFormSpinner = document.createElement("span");
+      this.postFormSpinner.setAttribute("id", "spinner");
       this.postFormSpinner.innerHTML = 'Uploading';
 
       this.postFormSubmit = document.createElement("div");
 
       this.formDiv = document.createElement('div');
-      this.formDiv.setAttribute("style", "position: absolute; top: 50%; left: 50%; width: 300px; margin-left: -150px; height: 300px; margin-top: -150px; background: yellow; z-index: 2; display: none;");
+      this.formDiv.setAttribute("id", "form");
 
-      this.postFormSubmit.append(this.postFormButton);
+      this.postFormSubmit.append(this.postFormNewButton);
+      this.postFormSubmit.append(this.postFormUpdateButton);
+      this.postFormSubmit.append(this.postFormDeleteButton);
 
-      this.formDiv.append(this.postFormCaption);
+      this.formDiv.append(this.postFormImageLabel);
       this.formDiv.append(this.postFormImage);
+      this.formDiv.append(this.postFormCaptionLabel);
+      this.formDiv.append(this.postFormCaption);
       this.formDiv.append(this.postFormSubmit);
+      this.formDiv.append(this.postFormId);
 
       parentElement.append(this.formDiv);
     },
-    createHighlight: function(parentElement=document.body) {
-      this.highlightDiv = document.createElement("div");
-      this.highlightFig = document.createElement("figure");
-      this.highlightCaption = document.createElement("figcaption");
-      this.highlightImg = document.createElement("img");
-
-      this.highlightFig.append(this.highlightImg);
-      this.highlightFig.append(this.highlightCaption);
-      this.highlightDiv.append(this.highlightFig);
-
-      this.highlightDiv.setAttribute("style", "display: none; position: absolute; top: 2em; left: 50%; width: 100px; margin-left: -50px; z-index: 2;");
-
-      parentElement.append(this.highlightDiv);
+    closeForm: function() {
+      this.overlayDiv.style.display = "none";
+      this.formDiv.style.display = "none";
+      this.newPostPlus.style.display = "block";
     },
-    highlightPost: function(imgSrc, caption) {
-      // NB "this" is the click event, ie figure element, not this object
-
-      this.highlightImg.src = imgSrc;
-      this.highlightCaption.innerHTML = caption;
-
-      this.toggleElement(this.highlightDiv);
+    showForm: function() {
+      this.overlayDiv.style.display = "block";
+      this.formDiv.style.display = "block";
+      this.newPostPlus.style.display = "none";
     },
-    closeOverlay: function() {
-      // Close overlay and all the stuff it may have open
-        this.overlayDiv.style.display = "none";
-        this.formDiv.style.display = "none";
-        this.highlightDiv.style.display = "none";
-    },
-    toggleElement: function(element) {
-      if (element.style.display === "none") {
-        this.overlayDiv.style.display = "block";
-        element.style.display = "block";
-      }
-      else {
-        this.overlayDiv.style.display = "none";
-        element.style.display = "none";
-      }
-    }
+
   } // /return
 }

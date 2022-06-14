@@ -4,11 +4,10 @@
 
 LOG = '/home/5/p/phnd/snaps.phnd.net/log.txt'
 IMAGES_DIR = '/home/5/p/phnd/snaps.phnd.net/images'
-THUMBNAIL_WIDTH = '200'
-LARGE_WIDTH = '600'
+THUMBNAIL_WIDTH = '600'
 JSON_FEED = '/home/5/p/phnd/snaps.phnd.net/feed.json'
 
-import cgi, sys, os
+import cgi, sys, os, glob
 from pathlib import Path
 import cgitb; cgitb.enable()
 import uuid
@@ -23,8 +22,6 @@ def log(msg):
 def prepend_json_feed(post):
 	"""
 	Add post details to start of json feed
-
-    Requires Python 3.7+ because relies on dictionary keeping order
 	"""
 
 	new_post = {
@@ -63,16 +60,9 @@ def save_post_image(post_id, form_image):
 	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -auto-orient -resize " + THUMBNAIL_WIDTH + " '" + IMAGES_DIR + '/' + file_name_thumbnail + "'"
 	os.system(cmd)
 
-	# Create large
-	file_extension_large = 'png'
-	file_name_large = post_id + '-large.' + file_extension_large
-	cmd = "convert '" + IMAGES_DIR + '/' + file_name_original + "' -auto-orient -resize " + LARGE_WIDTH + " '" + IMAGES_DIR + '/' + file_name_large + "'"
-	os.system(cmd)
-
 	return {
 		'original': file_name_original,
-		'thumbnail': file_name_thumbnail,
-		'large': file_name_large
+		'thumbnail': file_name_thumbnail
 	}
 
 
@@ -98,7 +88,6 @@ def put_request():
 
 		post['image_original'] = post_files['original']
 		post['image_thumbnail'] = post_files['thumbnail']
-		post['image_large'] = post_files['large']
 
 		prepend_json_feed(post)
 
@@ -125,13 +114,45 @@ POST''')
 
 def delete_request():
 	"""
-	Delete post and its files
+	Delete post from feed and remove any files
+
+	HTTP request:
+	Content-Type: multipart/form-data
+	Authorization: xxxx
+
+	id -> post id
 	"""
 
-	print('''Status: 200 OK
-Content-type: text/plain
+	try:
+		feed_updated = False
 
-DELETE''')
+		# Remove from feed
+		with open(JSON_FEED) as f:
+			feed = json.load(f)
+
+		# Add new post first in feed
+		for list_id, post in enumerate(feed['feed']):
+			if post['id'] == form['id'].value:
+				log('Match feed found, deleting post at position ' + str(list_id))
+				feed['feed'].pop(list_id)
+				feed_updated = True
+
+		if feed_updated:
+			with open(JSON_FEED, 'w') as f:
+				json.dump(feed, f, indent=2)
+
+		# Remove files
+		for f in glob.glob(IMAGES_DIR + "/" + form['id'].value + "*"):
+			log("Deleting: " + f)
+			os.remove(f)
+
+		print('Status: 200 OK')
+		print('Content-type: text/plain')
+		print('')
+
+	except Exception as e:
+		log('Exception: ' + str(e))
+		fail_request()
 
 
 def fail_request():
