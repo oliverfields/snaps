@@ -135,6 +135,7 @@ const Post = function() {
       postFigEdit.innerHTML = "✏️";
 
       postFigEdit.addEventListener("click", () => {
+        this.postFormImageLabel.innerHTML = "Replace image";
         this.postFormId.value = post.id;
         this.postFormCaption.value = post.caption;
         this.postFormImage.value = "";
@@ -189,6 +190,7 @@ const Post = function() {
       this.postFormId.value = "";
       this.postFormCaption.value = "";
       this.postFormImage.value = "";
+      this.postFormImageLabel.innerHTML = "Image";
       this.postFormNewButton.style.display = "block";
       this.postFormUpdateButton.style.display = "none";
       this.postFormDeleteButton.style.display = "none";
