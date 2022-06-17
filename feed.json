@@ -1,7 +1,12 @@
 {
   "feed": [
     {
-      "caption": "Kahkis",
+      "caption": "New cappy",
+      "id": "5e4041561a9d4e6188005bd547830364",
+      "originalExtension": "png"
+    },
+    {
+      "caption": "Your name and email address were configured automatically based on your username and hostname..",
       "id": "f4d1f4b7739e4fa4b265b53bd242a350",
       "originalExtension": "jpg"
     },
