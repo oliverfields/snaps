@@ -29,7 +29,7 @@ def prepend_json_feed(post):
 	new_post = {
 		'caption': post['caption'],
 		'id': post['id'],
-		'originalExtension': post['image_original'].partition('.')[2]
+		'originalExtension': post['imageOriginal'].partition('.')[2]
 	}
 
 	with open(JSON_FEED) as f:
