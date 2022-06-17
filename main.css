@@ -43,7 +43,7 @@ cursor: pointer;
 img {
 width: 100%;
 height: auto;
-border-top: solid 2em white;
+border-top: solid 2em #333333;
 }
 figcaption {
 color: white;
