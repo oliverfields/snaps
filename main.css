@@ -31,6 +31,7 @@ display: none;
 }
 #feed {
 max-width: 100%;
+margin-top: -2em;
 }
 #feed a {
 margin-bottom: 1.5em;
@@ -42,6 +43,7 @@ cursor: pointer;
 img {
 width: 100%;
 height: auto;
+border-top: solid 2em white;
 }
 figcaption {
 color: white;
