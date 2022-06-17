@@ -12,11 +12,13 @@ from pathlib import Path
 import cgitb; cgitb.enable()
 import uuid
 import json
+import datetime
 
 
 def log(msg):
+	t = datetime.datetime.now()
 	with open(LOG, "a") as f:
-		f.write(msg+'\n')
+		f.write(str(t) + '\t' + msg + '\n')
 
 
 def prepend_json_feed(post):
@@ -38,6 +40,37 @@ def prepend_json_feed(post):
 
 	with open(JSON_FEED, 'w') as f:
 		json.dump(feed, f, indent=2)
+
+
+def update_json_feed(post):
+	"""
+	Update existing post details in json feed
+	"""
+
+	log('Updateing feed with post:')
+	feedUpdate = False
+
+	with open(JSON_FEED) as f:
+		feed = json.load(f)
+
+	# Update feed with updated post
+	for p in feed['feed']:
+		if p['id'] == post['id']:
+			# Only caption and originalExtension may change, all other values remain the same
+			if 'caption' in post.keys():
+				if p['caption'] != post['caption']:
+					p['caption'] = post['caption']
+					feedUpdate = True
+			if 'originalExtension' in post.keys():
+				if p['originalExtension'] != post['originalExtension']:
+					p['originalExtension'] = post['originalExtension']
+					feedUpdate = True
+
+	if feedUpdate:
+		with open(JSON_FEED, 'w') as f:
+			json.dump(feed, f, indent=2)
+
+	return post
 
 
 def save_post_image(post_id, form_image):
@@ -62,7 +95,8 @@ def save_post_image(post_id, form_image):
 
 	return {
 		'original': file_name_original,
-		'thumbnail': file_name_thumbnail
+		'thumbnail': file_name_thumbnail,
+		'originalExtension': file_name_original.partition('.')[2]
 	}
 
 
@@ -74,8 +108,8 @@ def put_request():
 	Content-Type: multipart/form-data
 	Authorization: xxxx
 
-	image -> image file, acceptable files are >10mb and jpg, png or gif
-	title -> post title
+	image -> image file, acceptable files are >10mb and jpg, png or gif, mandatory
+	caption -> post title, mandatory
 	"""
 
 	try:
@@ -86,8 +120,8 @@ def put_request():
 
 		post_files = save_post_image(post['id'], form['image'])
 
-		post['image_original'] = post_files['original']
-		post['image_thumbnail'] = post_files['thumbnail']
+		post['imageOriginal'] = post_files['original']
+		post['imageThumbnail'] = post_files['thumbnail']
 
 		prepend_json_feed(post)
 
@@ -104,12 +138,42 @@ def put_request():
 def post_request():
 	"""
 	Update post, uploading files and updating post list
+
+	HTTP request:
+	Content-Type: multipart/form-data
+	Authorization: xxxx
+
+    id -> post id, mandatory
+	image -> image file, acceptable files are >10mb and jpg, png or gif, optional
+	caption -> post caption, optional
 	"""
 
-	print('''Status: 200 OK
-Content-type: text/plain
 
-POST''')
+	try:
+		post = {
+			'id': form['id'].value
+		}
+
+		if 'image' in form.keys():
+			log('Updateing image ' + post['id'])
+			post_files = save_post_image(post['id'], form['image'])
+			post['imageOriginal'] = post_files['original']
+			post['originalExtension'] = post_files['originalExtension']
+			post['imageThumbnail'] = post_files['thumbnail']
+
+		if 'caption' in form.keys():
+			post['caption'] = form['caption'].value
+
+		updated_post = update_json_feed(post)
+
+		print('Status: 200 OK')
+		print('Content-type: text/plain')
+		print('')
+		print(json.dumps(post))
+
+	except Exception as e:
+		log('Exception: ' + str(e))
+		fail_request()
 
 
 def delete_request():
@@ -120,7 +184,7 @@ def delete_request():
 	Content-Type: multipart/form-data
 	Authorization: xxxx
 
-	id -> post id
+	id -> post id, mandatory
 	"""
 
 	try:

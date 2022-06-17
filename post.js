@@ -5,7 +5,6 @@ const Post = function() {
       this.fromPost = 0;
       this.untilPost = 3;
       this.imageDir = "images/";
-      this.largeSuffix = "-large.png";
       this.thumbnailSuffix = "-thumbnail.png";
 
       this.createFeed();
@@ -16,8 +15,6 @@ const Post = function() {
       if (confirm("Really delete this post?") == false) {
         return false;
       }
-
-      console.log("Deleting " + this.postFormId.value);
 
       // Set spinner instead of submit button
       this.postFormDeleteButton.style.display = "none";
@@ -45,6 +42,109 @@ const Post = function() {
       clearInterval(interval);
 
 
+    },
+    updateFeed: function(updatedPost) {
+      let feedPosts = this.feedDiv.getElementsByTagName("div");
+      for (var i = 0; i < feedPosts.length; i++) {
+        if (feedPosts[i].id == updatedPost.id) {
+          if ('imageThumbnail' in updatedPost) {
+            let figImg = feedPosts[i].getElementsByTagName("img")[0];
+            figImg.setAttribute("src", this.imageDir + updatedPost.imageThumbnail + "?t=" + new Date().getTime());
+          }
+
+          if ('caption' in updatedPost) {
+            let figCaption = feedPosts[i].getElementsByTagName("figcaption")[0];
+            figCaption.innerHTML = updatedPost.caption;
+          }
+        }
+      }
+
+    },
+    updatePost: async function() {
+      // Add update post in to feed
+
+      // Set spinner instead of submit button
+      this.postFormDeleteButton.style.display = "none";
+      this.postFormUpdateButton.style.display = "none";
+      this.postFormSubmit.append(this.postFormSpinner);
+
+      let interval = setInterval(() => {
+        if ((this.postFormSpinner.innerHTML += ".").length == 12) {
+          this.postFormSpinner.innerHTML = "Updating";
+        }
+      }, 300);
+
+      // Update post
+      let updatedPost = await this.updatePostRequest(this);
+
+      this.updateFeed(updatedPost);
+
+      // Hide form
+      this.closeForm();
+
+      // Tidy up spinner and add button back
+      this.postFormSpinner.remove();
+      clearInterval(interval);
+    },
+    putPostRequest: async function(self) {
+      // Send put request to api to create new post
+
+      var data = new FormData()
+      data.append('image', self.postFormImage.files[0]) 
+      data.append('caption', self.postFormCaption.value)
+
+      try {
+        // Response contains fetch promise
+        let response = await fetch(
+          'post.cgi', {method: 'PUT', body: data });
+        return await response.json();
+      }
+      catch(error) {
+        alert('Creating new post failed');
+        console.error(error);
+      }
+    },
+    updatePostRequest: async function(self) {
+      // Send post request to api to update post
+
+      var data = new FormData()
+      var doUpdate = false;
+
+      data.append('id', self.postFormId.value) 
+
+      // only send image if one has been selected
+      if (self.postFormImage.value != "") {
+        data.append('image', self.postFormImage.files[0]) 
+        doUpdate = true;
+      }
+
+      if (await self.captionChanged(self.postFormCaption.value, self.postFormId.value, self.feed)) {
+        data.append('caption', self.postFormCaption.value)
+        doUpdate = true;
+      }
+
+      if (doUpdate) {
+        try {
+          // Response contains fetch promise
+          let response = await fetch(
+            'post.cgi', {method: 'POST', body: data });
+          return await response.json();
+        }
+        catch(error) {
+          alert('Updateing post failed');
+          console.error(error);
+        }
+      }
+    },
+    captionChanged: async function(caption, id, feed) {
+      feed.feed.forEach(function(post, index, list) {
+        if (post.id == id) {
+          if (post.caption == caption) {
+            return false;
+          }
+        }
+      });
+      return true;
     },
     addPost: async function() {
       // Add new post to feed
@@ -109,7 +209,6 @@ const Post = function() {
         console.error(error);
       }
     },
-
     getFeed: async function() {
        try {
         let response = await fetch('feed.json');
