@@ -3,7 +3,7 @@ const Post = function() {
     init: function() {
       this.feed = {};
       this.fromPost = 0;
-      this.untilPost = 3;
+      this.untilPost = 20;
       this.imageDir = "images/";
       this.thumbnailSuffix = "-thumbnail.png";
 

@@ -2,7 +2,7 @@ DirectoryIndex index.html
 
 Order deny,allow
 AuthType Basic
-AuthUserFile /home/5/p/phnd/htpasswd/filaments/.htpasswd 
+AuthUserFile /home/5/p/phnd/htpasswd/snaps/.htpasswd 
 AuthName "Password protected area"
 Require valid-user
 
